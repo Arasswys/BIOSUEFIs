@@ -23,3 +23,4 @@ Damaged Ring Levels: Usermode, Kernel, Hypervisor, Firmware, BIOS, UEFI, SPI Fla
 
 
 
+NOT:UEFIRIP.img dosyası UEFIRIP7.exe dosyasına aittir.Diğer UefıRıp sürümleri ile karıştırmayın.
